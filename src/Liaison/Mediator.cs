@@ -17,7 +17,7 @@ namespace Liaison
 
 	public class Mediator : ISubscribeHandlers, IMediator
 	{
-		private readonly Dictionary<Tuple<Type, Type>, dynamic> _subscriptions;
+		private readonly Dictionary<Tuple<Type, Type>, Delegate> _subscriptions;
 
 		public void Subscribe<TMessage>(Action< TMessage> handler)
 		{
@@ -40,16 +40,19 @@ namespace Liaison
 
 		public TResult Send<TMessage, TResult>(TMessage message)
 		{
-			dynamic handler;
-			if (!_subscriptions.TryGetValue(Tuple.Create(typeof(TMessage), typeof(TResult)), out handler))
+			Delegate value;
+			if (!_subscriptions.TryGetValue(Tuple.Create(typeof(TMessage), typeof(TResult)), out value))
 				throw new ApplicationException(string.Format("No Handler subscribed for message {0} with return type of {1}.", typeof(TMessage).Name, typeof(TResult).Name));
 
-			return (TResult)handler(message);
+			var handler = value as Func<TMessage, TResult>;
+			if (handler == null) throw new ApplicationException("Incorrect handler setup");
+
+			return handler(message);
 		}
 
 		public Mediator()
 		{
-			_subscriptions = new Dictionary<Tuple<Type, Type>, dynamic>();
+			_subscriptions = new Dictionary<Tuple<Type, Type>, Delegate>();
 		}
 
 		class Unit { }
