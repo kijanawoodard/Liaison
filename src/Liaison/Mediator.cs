@@ -17,7 +17,7 @@ namespace Liaison
 
 	public class Mediator : ISubscribeHandlers, IMediator
 	{
-		private readonly Dictionary<Tuple<Type, Type>, Delegate> _subscriptions;
+		private readonly IDictionary<int, Delegate> _subscriptions;
 
 		public void Subscribe<TMessage>(Action< TMessage> handler)
 		{
@@ -30,7 +30,7 @@ namespace Liaison
 
 		public void Subscribe<TMessage, TResult>(Func<TMessage, TResult> handler)
 		{
-			_subscriptions.Add(Tuple.Create(typeof(TMessage), typeof(TResult)), handler);
+			_subscriptions.Add(typeof(TMessage).GetHashCode(), handler);
 		}
 
 		public void Send<TMessage>(TMessage message)
@@ -41,18 +41,18 @@ namespace Liaison
 		public TResult Send<TMessage, TResult>(TMessage message)
 		{
 			Delegate value;
-			if (!_subscriptions.TryGetValue(Tuple.Create(typeof(TMessage), typeof(TResult)), out value))
-				throw new ApplicationException(string.Format("No Handler subscribed for message {0} with return type of {1}.", typeof(TMessage).Name, typeof(TResult).Name));
+			if (!_subscriptions.TryGetValue(typeof(TMessage).GetHashCode(), out value))
+				throw new ApplicationException(string.Format("No Handler subscribed for message {0}.", typeof(TMessage).Name));
 
 			var handler = value as Func<TMessage, TResult>;
-			if (handler == null) throw new ApplicationException("Incorrect handler setup");
+			if (handler == null) throw new ApplicationException(string.Format("The handler subscribed for {0} does not have result type of {1}.", typeof(TMessage).Name, typeof(TResult).Name));
 
 			return handler(message);
 		}
 
 		public Mediator()
 		{
-			_subscriptions = new Dictionary<Tuple<Type, Type>, Delegate>();
+			_subscriptions = new SortedDictionary<int, Delegate>();
 		}
 
 		class Unit { }
