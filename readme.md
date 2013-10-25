@@ -23,7 +23,18 @@ An in-memory mediator written in c#. Inspired by [nimbus].
 
 Nimbus is bloated and lacks clarity.
 
+##Usage
 
-
+	//app start
+	mediator.Subscribe<PostRequest, PostGetViewModel>(message =>
+	{
+		var result = new PostGetViewModel();
+		result = new FilteredPostVault().Handle(message, result);
+		result = new MarkdownContentStorage(root).Handle(message, result);
+		return result;
+	});
+	
+	//somewhere else
+	var result = _mediator.Send<PostRequest, PostGetViewModel>(message);
 
 [nimbus]: https://github.com/kijanawoodard/nimbus
